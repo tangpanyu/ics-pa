@@ -1,23 +1,9 @@
-/***************************************************************************************
-* Copyright (c) 2014-2024 Zihao Yu, Nanjing University
-*
-* NEMU is licensed under Mulan PSL v2.
-* You can use this software according to the terms and conditions of the Mulan PSL v2.
-* You may obtain a copy of Mulan PSL v2 at:
-*          http://license.coscl.org.cn/MulanPSL2
-*
-* THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
-* EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
-* MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
-*
-* See the Mulan PSL v2 for more details.
-***************************************************************************************/
-
 #include <isa.h>
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "sdb.h"
+#include <memory/paddr.h>
 
 static int is_batch_mode = false;
 
@@ -49,22 +35,77 @@ static int cmd_c(char *args) {
 
 
 static int cmd_q(char *args) {
+  //edit the nemu_state
+  nemu_state.state = NEMU_QUIT;
   return -1;
 }
 
+//mine cmd_si
+static int cmd_si(char *args) {
+	if(args == NULL) {
+		cpu_exec(1);
+		return 0;
+	}
+	int num = 0;
+	sscanf(args, "%d", &num);
+ 	cpu_exec(num);
+  	return 0;
+}
+
 static int cmd_help(char *args);
+
+static int cmd_info(char *args) {
+	if(args == NULL){
+		printf("Please choose r or w\n");
+		return 0;
+	}
+	if(*args == 'r')
+		isa_reg_display();
+	else if(*args == 'w'){
+		//print watchpoint infomation
+	}
+	return 0;
+}
+
+static int cmd_x(char *args) {
+	if(args == NULL) {
+		printf("Please type the num and the address \n");
+		return 0;
+	}
+	char *num_c = strtok(args, " ");
+	char *exp_c = num_c + strlen(num_c) + 1;
+	int num = 0;
+	paddr_t exp = 0; // 不同系统的地址长度不同
+	sscanf(num_c, "%d", &num);
+	sscanf(exp_c, "%x", &exp);
+	for(int i = 0; i < num; i++) {
+		//zero padding in high bit
+		printf("0x%X: %X\n", exp, paddr_read(exp, 4));
+		exp += 4;
+	}
+	return 0;
+}
+
+static int cmd_p(char *args) {
+	bool success = false;
+	printf("exp_val = %x\n", expr(args, &success));
+	return 0;
+}
 
 static struct {
   const char *name;
   const char *description;
   int (*handler) (char *);
 } cmd_table [] = {
-  { "help", "Display information about all supported commands", cmd_help },
+  { "help", "Display informations about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
 
   /* TODO: Add more commands */
-
+  { "si", "Step by step on program", cmd_si },
+  { "info", "display the information. -r: the register info; -w: the watchpoint info", cmd_info},
+  { "x", "Scan the memory", cmd_x},
+  { "p", "Calculate the expression value, cmd_p", cmd_p},
 };
 
 #define NR_CMD ARRLEN(cmd_table)

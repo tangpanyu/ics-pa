@@ -17,7 +17,8 @@
 #define __SDB_H__
 
 #include <common.h>
-
+#define MAX_TOKENS_LEN 1024
+#define MAX_STR_SIZE 32
 word_t expr(char *e, bool *success);
 
 #endif
