@@ -22,7 +22,7 @@
 #define str_temp(x) #x
 #define str(x) str_temp(x)
 
-// strlen() for string constant
+// strlen() for string constant 可以直接堆常量字符串计算长度-1多个\0
 #define STRLEN(CONST_STR) (sizeof(CONST_STR) - 1)
 
 // calculate the length of an array

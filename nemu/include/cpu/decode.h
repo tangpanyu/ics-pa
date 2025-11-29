@@ -29,7 +29,10 @@ typedef struct Decode {
 // --- pattern matching mechanism ---
 __attribute__((always_inline))
 static inline void pattern_decode(const char *str, int len,
-    uint64_t *key, uint64_t *mask, uint64_t *shift) {
+  uint64_t *key, uint64_t *mask, uint64_t *shift) {
+  
+// __key表示为1的位置，0位置表示0和？位置，__mask表示非？位置，__shift表示离操作码的距离，因为是一旦不等于？就归零了。
+// 也就是说，指令与上__mask等于key就是匹配上了，因为是1保持1，是0保持0，固定码就匹配上了。
   uint64_t __key = 0, __mask = 0, __shift = 0;
 #define macro(i) \
   if ((i) >= len) goto finish; \
@@ -44,6 +47,7 @@ static inline void pattern_decode(const char *str, int len,
     } \
   }
 
+// 这里会轮询到每一个位置，比如macro2(0) = macro(0) 和 macro(1)
 #define macro2(i)  macro(i);   macro((i) + 1)
 #define macro4(i)  macro2(i);  macro2((i) + 2)
 #define macro8(i)  macro4(i);  macro4((i) + 4)
